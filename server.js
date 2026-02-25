@@ -85,7 +85,15 @@ async function pickFirstAvailableTime(page) {
 async function runBooking({ url, fullName, email, dni }) {
   const bookingUrl = url || BOOKING_URL_DEFAULT;
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+  headless: true,
+  args: [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+  ],
+});
   const page = await browser.newPage();
 
   // Timeouts más altos
