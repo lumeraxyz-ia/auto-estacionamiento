@@ -130,9 +130,14 @@ if (lastErr) throw lastErr;
     await page.waitForLoadState("networkidle");
   }
 
+
+  
   // selecciona mañana
   const okDate = await clickTomorrow(page);
-  if (!okDate) throw new Error("No pude seleccionar la fecha (mañana).");
+  if (!okDate) {
+  await browser.close();
+  return { status: "NO_SLOTS_TOMORROW", confirmed: false };
+}
 
   // selecciona hora disponible
   await page.waitForTimeout(400);
@@ -161,7 +166,7 @@ if (lastErr) throw lastErr;
   const confirmed = (await confirm.count()) > 0;
 
   await browser.close();
-  return { confirmed };
+return { status: confirmed ? "BOOKED_CONFIRMED" : "BOOKED_UNCONFIRMED", confirmed };
 }
 
 // Endpoint que n8n llamará
