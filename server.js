@@ -88,7 +88,29 @@ async function runBooking({ url, fullName, email, dni }) {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
 
-  await page.goto(bookingUrl, { waitUntil: "domcontentloaded" });
+  // Timeouts más altos
+page.setDefaultNavigationTimeout(120000); // 2 min
+page.setDefaultTimeout(60000);            // 60s para waits/clicks
+
+// Señales anti-headless básico
+await page.setExtraHTTPHeaders({
+  "Accept-Language": "es-PE,es;q=0.9,en;q=0.8",
+});
+await page.setViewportSize({ width: 1280, height: 720 });
+
+// Reintento de navegación (3 tries)
+let lastErr;
+for (let i = 1; i <= 3; i++) {
+  try {
+    await page.goto(bookingUrl, { waitUntil: "domcontentloaded", timeout: 120000 });
+    lastErr = null;
+    break;
+  } catch (e) {
+    lastErr = e;
+    await page.waitForTimeout(1500 * i);
+  }
+}
+if (lastErr) throw lastErr;
 
   // Si te disparas 23:59:55 desde n8n, espera a 00:00 y recarga
   const t = getLimaNowParts();
