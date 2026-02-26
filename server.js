@@ -28,7 +28,7 @@ function tomorrowDayNumberLima() {
   return dt.getUTCDate();
 }
 
-async function clickTomorrow(page) async function clickTomorrow(page) {
+async function clickTomorrow(page) {
   const D = tomorrowDayNumberLima(); // tu función actual
 
   // Asegura que el calendario esté visible
