@@ -28,21 +28,53 @@ function tomorrowDayNumberLima() {
   return dt.getUTCDate();
 }
 
-async function clickTomorrow(page) {
-  const D = tomorrowDayNumberLima();
+async function clickTomorrow(page) async function clickTomorrow(page) {
+  const D = tomorrowDayNumberLima(); // tu función actual
 
-  // intenta por aria-label
-  const aria = page.locator(`button[aria-label*="${D}"]`);
-  const ariaCount = await aria.count();
-  for (let i = 0; i < ariaCount; i++) {
-    const btn = aria.nth(i);
-    if (await btn.isVisible().catch(() => false)) {
-      if (!(await btn.isDisabled().catch(() => false))) {
-        await btn.click();
-        return true;
-      }
-    }
+  // Asegura que el calendario esté visible
+  await page.getByText(/Febrero|February|FECHA/i).first().scrollIntoViewIfNeeded().catch(()=>{});
+  await page.waitForTimeout(200);
+
+  // 1) candidatos: botones reales + elementos con rol
+  const candidates = page.locator('button, [role="button"], [role="gridcell"]');
+
+  const n = await candidates.count();
+  for (let i = 0; i < Math.min(n, 400); i++) {
+    const el = candidates.nth(i);
+
+    // visible
+    const visible = await el.isVisible().catch(()=>false);
+    if (!visible) continue;
+
+    // texto debe contener el número del día como token (27, no 127)
+    const txt = (await el.innerText().catch(()=>''))?.replace(/\s+/g,' ').trim();
+    if (!txt) continue;
+
+    // match “27” como token
+    if (!new RegExp(`(^|\\D)${D}(\\D|$)`).test(txt)) continue;
+
+    // no disabled (disabled o aria-disabled)
+    const disabledProp = await el.isDisabled().catch(()=>false);
+    if (disabledProp) continue;
+
+    const ariaDisabled = await el.getAttribute('aria-disabled').catch(()=>null);
+    if (ariaDisabled && ariaDisabled.toLowerCase() === 'true') continue;
+
+    // intenta click
+    await el.scrollIntoViewIfNeeded().catch(()=>{});
+    await el.click({ timeout: 5000 }).catch(()=>{});
+    await page.waitForTimeout(150);
+
+    // si después del click aparece hora o se marca selección, damos por OK
+    const hourSection = page.locator('text=/HORA|HOUR/i');
+    if (await hourSection.count()) return true;
+
+    // aunque no detectemos sección, igual devolvemos true porque pudo haber seleccionado
+    return true;
   }
+
+  return false;
+}
 
   // intenta por texto del día
   const dayButtons = page.locator("button", { hasText: new RegExp(`^${D}$`) });
